@@ -33,13 +33,19 @@ test_MITBIH_v111 = f'test_MITBIH_{predictions}_v111.pt'
 results_dir_MITBIH_v111 = f"results_MITBIH_{predictions}_v111"
 checkpoints_dir_MITBIH_v111 = f"checkpoints_MITBIH_{predictions}_v111"
 
+# v112 as v111, but with attention layer in the encoder and the decoder
+train_MITBIH_v112 = f'train_MITBIH_{predictions}_v112.pt'
+test_MITBIH_v112 = f'test_MITBIH_{predictions}_v112.pt'
+results_dir_MITBIH_v112 = f"results_MITBIH_{predictions}_v112"
+checkpoints_dir_MITBIH_v112 = f"checkpoints_MITBIH_{predictions}_v112"
+
 datasets_dir_MITBIH = 'MITBIH'
 
 # current settings
-train_data = train_MITBIH_v111
-test_data = test_MITBIH_v111
-results_dir = results_dir_MITBIH_v111
-checkpoints_dir = checkpoints_dir_MITBIH_v111
+train_data = train_MITBIH_v112
+test_data = test_MITBIH_v112
+results_dir = results_dir_MITBIH_v112
+checkpoints_dir = checkpoints_dir_MITBIH_v112
 datasets_dir = datasets_dir_MITBIH
 
 

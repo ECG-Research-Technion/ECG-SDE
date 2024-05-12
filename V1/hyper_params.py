@@ -9,7 +9,7 @@ def vqvae_hyperparams():
     
     hypers['channel'] = 64                # The number of channels in the feature maps produced by the encoder
     
-    hypers['n_res_block'] = 15            # The number of residual blocks in the transformer of the VQ-VAE model
+    hypers['n_res_block'] = 16            # The number of residual blocks in the transformer of the VQ-VAE model
 
     hypers['n_res_channel'] = 64          # The number of channels in the residual blocks of the transformer
         
@@ -23,7 +23,7 @@ def vqvae_hyperparams():
         
     hypers['n_trans_layers'] = 4          # The number of transformer layers in the VQ-VAE model
     
-    hypers['batch_size'] = 64             # The number of samples in each batch
+    hypers['batch_size'] = 32             # The number of samples in each batch
     
     hypers['learning_rate'] = 0.001       # The learning rate used by the optimizer
 

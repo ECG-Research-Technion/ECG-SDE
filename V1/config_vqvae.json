@@ -1,5 +1,6 @@
 {
     "has_transformer": false,
+    "has_attention": true,
     "samples_per_second": 360,
     "input_signal_duration": 3,
     "signals_per_patient": 100,

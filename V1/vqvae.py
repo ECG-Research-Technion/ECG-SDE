@@ -158,14 +158,12 @@ class ResBlockEnc(nn.Module):
                 kernel_size=3,
                 padding=1,
             ),
-            nn.BatchNorm1d(channel*2),
             nn.SiLU(inplace=True),
             nn.Conv1d(
                 in_channels=channel*2,
                 out_channels=in_channel,
                 kernel_size=1,
             ),
-            nn.BatchNorm1d(in_channel),
             nn.SiLU(inplace=True),
         )
 
@@ -174,7 +172,7 @@ class ResBlockEnc(nn.Module):
 
     def forward(self, inputs):
         out = self.conv(inputs)
-        out += inputs
+        out = out + inputs
 
         return out
     
@@ -194,14 +192,12 @@ class ResBlockDec(nn.Module):
                 kernel_size=3,
                 padding=1,
             ),
-            nn.BatchNorm1d(channel*2),
             nn.SiLU(inplace=True),
             nn.ConvTranspose1d(
                 in_channels=channel*2,
                 out_channels=in_channel,
                 kernel_size=1,
             ),
-            nn.BatchNorm1d(in_channel),
             nn.SiLU(inplace=True),
         )
 
@@ -210,7 +206,7 @@ class ResBlockDec(nn.Module):
 
     def forward(self, inputs):
         out = self.conv(inputs)
-        out += inputs
+        out = out + inputs
 
         return out
 
@@ -224,6 +220,7 @@ class Encoder(nn.Module):
             n_res_channel: int,
             additional_layers:int = 2,
             has_transformer: bool = False,
+            has_attention: bool = False,
             n_trans_layers: int = 2,
     ):
         super().__init__()
@@ -235,7 +232,6 @@ class Encoder(nn.Module):
                         kernel_size=3,
                         padding=1,
                     ),
-                    nn.BatchNorm1d(channel),
                     nn.SiLU(inplace=True),
         ])
 
@@ -244,6 +240,11 @@ class Encoder(nn.Module):
             self.revin_layer = RevIN(num_features=channel, affine=True)
             self.transformer = Transformer(num_heads=2, num_layers=n_trans_layers, feature_dim=channel, sequence_len=forecast_signals, dropout=0.1)
         
+        self.has_attention = has_attention
+        if self.has_attention:
+            self.attention = nn.MultiheadAttention(embed_dim=channel, num_heads=2, batch_first=True)
+            self.normLayer = nn.BatchNorm1d(channel)
+
         blocks = []
         for _ in range(additional_layers):
             blocks.extend([
@@ -253,7 +254,6 @@ class Encoder(nn.Module):
                     kernel_size=3,
                     padding=1,
                 ),
-                nn.BatchNorm1d(channel*2),
                 nn.SiLU(inplace=True),
                 nn.Conv1d(
                     in_channels=channel*2,
@@ -262,7 +262,6 @@ class Encoder(nn.Module):
                     padding=1,
                     stride=2,
                 ),
-                nn.BatchNorm1d(channel*2),
                 nn.SiLU(inplace=True),
                 nn.Conv1d(
                     in_channels=channel*2,
@@ -276,6 +275,14 @@ class Encoder(nn.Module):
 
         for _ in range(n_res_block):
             blocks.append(ResBlockEnc(channel, n_res_channel))
+            blocks.append(nn.BatchNorm1d(channel))
+
+        blocks.append(nn.Conv1d(
+                    in_channels=channel,
+                    out_channels=channel,
+                    kernel_size=3,
+                    padding=1,
+                ))
                             
         self.blocks = nn.Sequential(*blocks)
 
@@ -283,6 +290,7 @@ class Encoder(nn.Module):
         return self.forward(inputs)
 
     def forward(self, inputs: Tensor):
+        assert not (self.has_attention and self.has_transformer)
         out = self.feature_expander(inputs)
         if self.has_transformer:
             out = out.permute(0, 2, 1).contiguous()
@@ -290,6 +298,13 @@ class Encoder(nn.Module):
             out = self.transformer(out)
             out = self.revin_layer(out, mode="denorm")
             out = out.permute(0, 2, 1).contiguous()
+
+        if self.has_attention:
+            out = out.permute(0, 2, 1).contiguous()
+            attn_out, _ = self.attention(out, out, out)
+            out = out + attn_out
+            out = out.permute(0, 2, 1).contiguous()
+            out = self.normLayer(out)
         out = self.blocks(out)
         return out
 
@@ -303,14 +318,23 @@ class Decoder(nn.Module):
             n_res_channel: int,
             additional_layers:int = 2,
             has_transformer: bool = False,
+            has_attention: bool = False,
             n_trans_layers: int = 2,
     ):
         super().__init__()
         
         blocks = []
 
+        blocks.append(nn.Conv1d(
+                    in_channels=channel,
+                    out_channels=channel,
+                    kernel_size=3,
+                    padding=1,
+                ))
+
         for _ in range(n_res_block):
             blocks.append(ResBlockDec(channel, n_res_channel))
+            blocks.append(nn.BatchNorm1d(channel))
         
         for _ in range(additional_layers):
             blocks.extend(
@@ -321,7 +345,6 @@ class Decoder(nn.Module):
                         kernel_size=3,
                         padding=1,
                     ),
-                    nn.BatchNorm1d(channel*2),
                     nn.SiLU(inplace=True),
                     nn.ConvTranspose1d(
                         in_channels=channel*2,
@@ -330,7 +353,6 @@ class Decoder(nn.Module):
                         padding=1,
                         stride=2,
                     ),
-                    nn.BatchNorm1d(channel*2),
                     nn.SiLU(inplace=True),
                     nn.ConvTranspose1d(
                         in_channels=channel*2,
@@ -348,15 +370,18 @@ class Decoder(nn.Module):
             self.revin_layer = RevIN(num_features=channel, affine=True)
             self.transformer = Transformer(num_heads=2, num_layers=n_trans_layers, feature_dim=channel, sequence_len=forecast_signals, dropout=0.1)
 
+        self.has_attention = has_attention
+        if self.has_attention:
+            self.normLayer = nn.BatchNorm1d(channel)
+            self.attention = nn.MultiheadAttention(embed_dim=channel, num_heads=2, batch_first=True)
+
         self.feature_reducer = nn.Sequential(*[
             nn.ConvTranspose1d(
                 in_channels=channel,
                 out_channels=out_channel,
                 kernel_size=3,
                 padding=1,
-            ),
-            nn.BatchNorm1d(out_channel),
-            nn.SiLU(inplace=True)
+            )
         ])
 
         self.blocks = nn.Sequential(*blocks)
@@ -365,6 +390,7 @@ class Decoder(nn.Module):
         return self.forward(inputs)
 
     def forward(self, inputs):
+        assert not (self.has_attention and self.has_transformer)
         out = self.blocks(inputs)
         if self.has_transformer:
             out = out.permute(0, 2, 1).contiguous()
@@ -372,6 +398,13 @@ class Decoder(nn.Module):
             out = self.transformer(out)
             out = self.revin_layer(out, mode="denorm")
             out = out.permute(0, 2, 1).contiguous()
+
+        if self.has_attention:
+            out = out.permute(0, 2, 1).contiguous()
+            attn_out, _ = self.attention(out, out, out)
+            out = out + attn_out
+            out = out.permute(0, 2, 1).contiguous()
+            out = self.normLayer(out)
         out = self.feature_reducer(out)
         return out
 
@@ -388,6 +421,7 @@ class VQVAE(nn.Module):
             decay: float = 0.99,
             n_dims: int = 1,
             has_transformer: bool = False,
+            has_attention: bool = False,
             n_trans_layers: int = 2,
             additional_layers: int = 2,
     ):
@@ -401,6 +435,7 @@ class VQVAE(nn.Module):
             n_res_channel=n_res_channel,
             additional_layers=additional_layers,
             has_transformer=has_transformer,
+            has_attention=has_attention,
             n_trans_layers=n_trans_layers,
         )
 
@@ -429,6 +464,7 @@ class VQVAE(nn.Module):
             n_res_channel=n_res_channel,
             additional_layers=additional_layers,
             has_transformer=has_transformer,
+            has_attention=has_attention,
             n_trans_layers=n_trans_layers,
         )
 

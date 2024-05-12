@@ -19,7 +19,7 @@ from paths import *
 
 # Configure GPU settings
 os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1,2'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
@@ -45,7 +45,7 @@ def plt_two_time_series(samples, path, model, epoch):
             axs[channel].legend()
         
         plt.tight_layout()
-        res_filename = path / f"before_training.png" if epoch == -1 else path / f"epoch_{epoch}_sample_{i}.png"
+        res_filename = path / f"before_training.png" if epoch == -1 else path / f"epoch_{epoch+1}_sample_{i}.png"
         plt.savefig(res_filename)
         plt.close()
 
@@ -99,6 +99,7 @@ def setup_model_and_optim():
         decay=vqvae_hp['decay'],
         n_dims=vqvae_hp['n_dims'],
         has_transformer=config['has_transformer'],
+        has_attention=config['has_attention'],
         n_trans_layers=vqvae_hp['n_trans_layers']
     ).to(device)
     print(f"Number of parameters in the model: {sum(p.numel() for p in vqvae.parameters() if p.requires_grad)}")
@@ -150,6 +151,8 @@ def run_training(vqvae, optimizer, scheduler, X_train_data, X_test_data):
 def main():
     # Initialize and load data
     X_train_data, X_test_data = initialize_data()
+    # X_train_data = X_train_data[0:32]
+    # X_test_data = X_train_data
     print(X_train_data.shape, X_test_data.shape)
     
     # Load hyperparameters and initialize model, optimizer, scheduler
