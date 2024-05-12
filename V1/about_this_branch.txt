@@ -1,0 +1,2 @@
+in this branch we have attention layer in the encoder and the decoder, noramlization but without FF layer.
+channel in the hyperparams = 64 (expanding)
