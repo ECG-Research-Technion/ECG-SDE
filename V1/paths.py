@@ -33,19 +33,49 @@ test_MITBIH_v111 = f'test_MITBIH_{predictions}_v111.pt'
 results_dir_MITBIH_v111 = f"results_MITBIH_{predictions}_v111"
 checkpoints_dir_MITBIH_v111 = f"checkpoints_MITBIH_{predictions}_v111"
 
-# v112 as v111, but with attention layer in the encoder and the decoder
+# v112 as v111, but with attention layer in the encoder and the decoder (no FF)
 train_MITBIH_v112 = f'train_MITBIH_{predictions}_v112.pt'
 test_MITBIH_v112 = f'test_MITBIH_{predictions}_v112.pt'
 results_dir_MITBIH_v112 = f"results_MITBIH_{predictions}_v112"
 checkpoints_dir_MITBIH_v112 = f"checkpoints_MITBIH_{predictions}_v112"
 
+# v113 trying to add FF - reduced 'channel' in hyperparams to 2 (prev - 64) and num_res_blocks
+train_MITBIH_v113 = f'train_MITBIH_{predictions}_v112.pt'
+test_MITBIH_v113 = f'test_MITBIH_{predictions}_v112.pt'
+results_dir_MITBIH_v113 = f"results_MITBIH_{predictions}_v113"
+checkpoints_dir_MITBIH_v113 = f"checkpoints_MITBIH_{predictions}_v113"
+
+# v114 as v113, with channel = 4
+train_MITBIH_v114 = f'train_MITBIH_{predictions}_v112.pt'
+test_MITBIH_v114 = f'test_MITBIH_{predictions}_v112.pt'
+results_dir_MITBIH_v114 = f"results_MITBIH_{predictions}_v114"
+checkpoints_dir_MITBIH_v114 = f"checkpoints_MITBIH_{predictions}_v114"
+
+# v115 as v113, with channel = 8
+train_MITBIH_v115 = f'train_MITBIH_{predictions}_v112.pt'
+test_MITBIH_v115 = f'test_MITBIH_{predictions}_v112.pt'
+results_dir_MITBIH_v115 = f"results_MITBIH_{predictions}_v115"
+checkpoints_dir_MITBIH_v115 = f"checkpoints_MITBIH_{predictions}_v115"
+
+# v116
+train_MITBIH_v116 = f'train_MITBIH_{predictions}_v112.pt'
+test_MITBIH_v116 = f'test_MITBIH_{predictions}_v112.pt'
+results_dir_MITBIH_v116 = f"results_MITBIH_{predictions}_v116"
+checkpoints_dir_MITBIH_v116 = f"checkpoints_MITBIH_{predictions}_v116"
+
+# v117
+train_MITBIH_v117 = f'train_MITBIH_{predictions}_v112.pt'
+test_MITBIH_v117 = f'test_MITBIH_{predictions}_v112.pt'
+results_dir_MITBIH_v117 = f"results_MITBIH_{predictions}_v117"
+checkpoints_dir_MITBIH_v117 = f"checkpoints_MITBIH_{predictions}_v117"
+
 datasets_dir_MITBIH = 'MITBIH'
 
 # current settings
-train_data = train_MITBIH_v112
-test_data = test_MITBIH_v112
-results_dir = results_dir_MITBIH_v112
-checkpoints_dir = checkpoints_dir_MITBIH_v112
+train_data = train_MITBIH_v117
+test_data = test_MITBIH_v117
+results_dir = results_dir_MITBIH_v117
+checkpoints_dir = checkpoints_dir_MITBIH_v117
 datasets_dir = datasets_dir_MITBIH
 
 

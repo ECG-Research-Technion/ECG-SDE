@@ -19,7 +19,7 @@ from paths import *
 
 # Configure GPU settings
 os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
-os.environ['CUDA_VISIBLE_DEVICES'] = '1,2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '5'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
@@ -106,6 +106,11 @@ def setup_model_and_optim():
     
     optimizer = optim.RAdam(vqvae.parameters(), lr=vqvae_hp['learning_rate'])
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
+
+    if config['model_checkpoint_weights'] != "none":
+        state_dict = torch.load(CHECKPOINTS_DIR / config['model_checkpoint_weights'])
+        vqvae.load_state_dict(state_dict)
+
     return vqvae, optimizer, scheduler
 
 def eval_before_training(X_test_data, model):
@@ -151,8 +156,6 @@ def run_training(vqvae, optimizer, scheduler, X_train_data, X_test_data):
 def main():
     # Initialize and load data
     X_train_data, X_test_data = initialize_data()
-    # X_train_data = X_train_data[0:32]
-    # X_test_data = X_train_data
     print(X_train_data.shape, X_test_data.shape)
     
     # Load hyperparameters and initialize model, optimizer, scheduler

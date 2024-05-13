@@ -83,6 +83,29 @@ class RevIN(nn.Module):
 
         return x
 
+class PositionalEncoding(nn.Module):
+
+    def __init__(self, channel: int, dropout: float = 0.1, max_len: int = 1080):
+        super().__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, channel, 2) * (-math.log(10000.0) / channel))
+        pe = torch.zeros(max_len, 1, channel)
+        pe[:, 0, 0::2] = torch.sin(position * div_term)
+        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Arguments:
+            x: Tensor, shape ``[seq_len, batch_size, channel]``
+        """
+        self.pe = self.pe.to(x.device)
+        x = x + self.pe[:x.size(0)]
+        x = self.dropout(x)
+        return x
+
 
 class Quantize(nn.Module):
     def __init__(
@@ -242,8 +265,12 @@ class Encoder(nn.Module):
         
         self.has_attention = has_attention
         if self.has_attention:
+            self.pos_encoding = PositionalEncoding(channel=channel)
             self.attention = nn.MultiheadAttention(embed_dim=channel, num_heads=2, batch_first=True)
-            self.normLayer = nn.BatchNorm1d(channel)
+            self.fc = nn.Linear(channel*1080, channel*1080)
+            self.fc_activation = nn.SiLU(inplace=True)
+            self.normLayer1 = nn.BatchNorm1d(channel)
+            self.normLayer2 = nn.BatchNorm1d(channel)
 
         blocks = []
         for _ in range(additional_layers):
@@ -301,10 +328,18 @@ class Encoder(nn.Module):
 
         if self.has_attention:
             out = out.permute(0, 2, 1).contiguous()
+            out = self.pos_encoding(out)
             attn_out, _ = self.attention(out, out, out)
             out = out + attn_out
             out = out.permute(0, 2, 1).contiguous()
-            out = self.normLayer(out)
+            out = self.normLayer1(out)
+            orig_shape = out.shape
+            out = out.view(out.size(0), -1)
+            out = self.fc(out)
+            out = out.view(orig_shape)
+            out = self.fc_activation(out)
+            out = self.normLayer2(out)
+            assert out.shape == orig_shape
         out = self.blocks(out)
         return out
 
@@ -372,8 +407,12 @@ class Decoder(nn.Module):
 
         self.has_attention = has_attention
         if self.has_attention:
-            self.normLayer = nn.BatchNorm1d(channel)
+            self.pos_encoding = PositionalEncoding(channel=channel)
             self.attention = nn.MultiheadAttention(embed_dim=channel, num_heads=2, batch_first=True)
+            self.fc = nn.Linear(channel*1080, channel*1080)
+            self.fc_activation = nn.SiLU(inplace=True)
+            self.normLayer1 = nn.BatchNorm1d(channel)
+            self.normLayer2 = nn.BatchNorm1d(channel)
 
         self.feature_reducer = nn.Sequential(*[
             nn.ConvTranspose1d(
@@ -401,10 +440,19 @@ class Decoder(nn.Module):
 
         if self.has_attention:
             out = out.permute(0, 2, 1).contiguous()
+            out = self.pos_encoding(out)
             attn_out, _ = self.attention(out, out, out)
             out = out + attn_out
             out = out.permute(0, 2, 1).contiguous()
-            out = self.normLayer(out)
+            out = self.normLayer1(out)
+            orig_shape = out.shape
+            out = out.view(out.size(0), -1)
+            out = self.fc(out)
+            out = out.view(orig_shape)
+            out = self.fc_activation(out)
+            out = self.normLayer2(out)
+            assert out.shape == orig_shape
+
         out = self.feature_reducer(out)
         return out
 

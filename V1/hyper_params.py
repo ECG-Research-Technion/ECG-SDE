@@ -7,7 +7,7 @@ def vqvae_hyperparams():
     # ========================
     hypers['in_channel'] = 2              # The number of channels in the ECG signal
     
-    hypers['channel'] = 64                # The number of channels in the feature maps produced by the encoder
+    hypers['channel'] = 8                 # The number of channels in the feature maps produced by the encoder
     
     hypers['n_res_block'] = 16            # The number of residual blocks in the transformer of the VQ-VAE model
 
