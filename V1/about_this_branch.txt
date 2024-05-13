@@ -1,9 +1,1 @@
-(v113) - channel = 2, resblocks = 16, attention layers in encoder and decoder, FF, without norm. - 50/50
-
-(v114) - as tmux 0, but channel = 4. - 50/50
-
-(v115) - as tmux 0, but channel = 8. - - 50/50
-
-(v116) - as 115, but added pos_encoding - failed.
-
-(v117) - added norm layers after reisdual connection and FC (attention)
+(v118) - old vqvae arch. tmux 2

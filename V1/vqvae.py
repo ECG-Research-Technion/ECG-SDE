@@ -258,16 +258,16 @@ class Encoder(nn.Module):
                     nn.SiLU(inplace=True),
         ])
 
-        self.has_transformer = has_transformer
-        if self.has_transformer:
-            self.revin_layer = RevIN(num_features=channel, affine=True)
-            self.transformer = Transformer(num_heads=2, num_layers=n_trans_layers, feature_dim=channel, sequence_len=forecast_signals, dropout=0.1)
+        # self.has_transformer = has_transformer
+        # if self.has_transformer:
+        #     self.revin_layer = RevIN(num_features=channel, affine=True)
+        #     self.transformer = Transformer(num_heads=2, num_layers=n_trans_layers, feature_dim=channel, sequence_len=forecast_signals, dropout=0.1)
         
         self.has_attention = has_attention
         if self.has_attention:
             self.pos_encoding = PositionalEncoding(channel=channel)
             self.attention = nn.MultiheadAttention(embed_dim=channel, num_heads=2, batch_first=True)
-            self.fc = nn.Linear(channel*1080, channel*1080)
+            # self.fc = nn.Linear(channel*1080, channel*1080)
             self.fc_activation = nn.SiLU(inplace=True)
             self.normLayer1 = nn.BatchNorm1d(channel)
             self.normLayer2 = nn.BatchNorm1d(channel)
@@ -317,14 +317,14 @@ class Encoder(nn.Module):
         return self.forward(inputs)
 
     def forward(self, inputs: Tensor):
-        assert not (self.has_attention and self.has_transformer)
+        # assert not (self.has_attention and self.has_transformer)
         out = self.feature_expander(inputs)
-        if self.has_transformer:
-            out = out.permute(0, 2, 1).contiguous()
-            out = self.revin_layer(out, mode="norm")
-            out = self.transformer(out)
-            out = self.revin_layer(out, mode="denorm")
-            out = out.permute(0, 2, 1).contiguous()
+        # if self.has_transformer:
+        #     out = out.permute(0, 2, 1).contiguous()
+        #     out = self.revin_layer(out, mode="norm")
+        #     out = self.transformer(out)
+        #     out = self.revin_layer(out, mode="denorm")
+        #     out = out.permute(0, 2, 1).contiguous()
 
         if self.has_attention:
             out = out.permute(0, 2, 1).contiguous()
@@ -333,13 +333,12 @@ class Encoder(nn.Module):
             out = out + attn_out
             out = out.permute(0, 2, 1).contiguous()
             out = self.normLayer1(out)
-            orig_shape = out.shape
-            out = out.view(out.size(0), -1)
-            out = self.fc(out)
-            out = out.view(orig_shape)
-            out = self.fc_activation(out)
-            out = self.normLayer2(out)
-            assert out.shape == orig_shape
+            # orig_shape = out.shape
+            # out = out.view(out.size(0), -1)
+            # out = self.fc(out)
+            # out = out.view(orig_shape)
+            # out = self.fc_activation(out)
+            # assert out.shape == orig_shape
         out = self.blocks(out)
         return out
 
@@ -400,16 +399,16 @@ class Decoder(nn.Module):
                 ]
             )
 
-        self.has_transformer = has_transformer
-        if self.has_transformer:
-            self.revin_layer = RevIN(num_features=channel, affine=True)
-            self.transformer = Transformer(num_heads=2, num_layers=n_trans_layers, feature_dim=channel, sequence_len=forecast_signals, dropout=0.1)
+        # self.has_transformer = has_transformer
+        # if self.has_transformer:
+        #     self.revin_layer = RevIN(num_features=channel, affine=True)
+        #     self.transformer = Transformer(num_heads=2, num_layers=n_trans_layers, feature_dim=channel, sequence_len=forecast_signals, dropout=0.1)
 
         self.has_attention = has_attention
         if self.has_attention:
             self.pos_encoding = PositionalEncoding(channel=channel)
             self.attention = nn.MultiheadAttention(embed_dim=channel, num_heads=2, batch_first=True)
-            self.fc = nn.Linear(channel*1080, channel*1080)
+            # self.fc = nn.Linear(channel*1080, channel*1080)
             self.fc_activation = nn.SiLU(inplace=True)
             self.normLayer1 = nn.BatchNorm1d(channel)
             self.normLayer2 = nn.BatchNorm1d(channel)
@@ -429,14 +428,14 @@ class Decoder(nn.Module):
         return self.forward(inputs)
 
     def forward(self, inputs):
-        assert not (self.has_attention and self.has_transformer)
+        # assert not (self.has_attention and self.has_transformer)
         out = self.blocks(inputs)
-        if self.has_transformer:
-            out = out.permute(0, 2, 1).contiguous()
-            out = self.revin_layer(out, mode="norm")
-            out = self.transformer(out)
-            out = self.revin_layer(out, mode="denorm")
-            out = out.permute(0, 2, 1).contiguous()
+        # if self.has_transformer:
+        #     out = out.permute(0, 2, 1).contiguous()
+        #     out = self.revin_layer(out, mode="norm")
+        #     out = self.transformer(out)
+        #     out = self.revin_layer(out, mode="denorm")
+        #     out = out.permute(0, 2, 1).contiguous()
 
         if self.has_attention:
             out = out.permute(0, 2, 1).contiguous()
@@ -445,13 +444,12 @@ class Decoder(nn.Module):
             out = out + attn_out
             out = out.permute(0, 2, 1).contiguous()
             out = self.normLayer1(out)
-            orig_shape = out.shape
-            out = out.view(out.size(0), -1)
-            out = self.fc(out)
-            out = out.view(orig_shape)
-            out = self.fc_activation(out)
-            out = self.normLayer2(out)
-            assert out.shape == orig_shape
+            # orig_shape = out.shape
+            # out = out.view(out.size(0), -1)
+            # out = self.fc(out)
+            # out = out.view(orig_shape)
+            # out = self.fc_activation(out)
+            # assert out.shape == orig_shape
 
         out = self.feature_reducer(out)
         return out
@@ -487,8 +485,61 @@ class VQVAE(nn.Module):
             n_trans_layers=n_trans_layers,
         )
 
-        self.quantize_conv_b = nn.Conv1d(
+        self.enc_m = Encoder(
+            in_channel=channel,
+            channel=channel,
+            n_res_block=n_res_block,
+            n_res_channel=n_res_channel,
+            additional_layers=0,
+        )
+        self.enc_t = Encoder(
+            in_channel=channel,
+            channel=channel,
+            n_res_block=n_res_block,
+            n_res_channel=n_res_channel,
+            additional_layers=0,
+        )
+
+        self.quantize_conv_t = nn.Conv1d(
             in_channels=channel,
+            out_channels=embed_dim,
+            kernel_size=1,
+        )
+
+        self.quantize_t = Quantize(
+            dim=embed_dim,
+            n_embed=n_embed,
+            decay=decay,
+        )
+        self.dec_t = Decoder(
+            out_channel=embed_dim,
+            channel=embed_dim,
+            n_res_block=n_res_block,
+            n_res_channel=n_res_channel,
+            additional_layers=0,
+        )
+
+        self.quantize_conv_m = nn.Conv1d(
+            in_channels=(embed_dim + channel),
+            out_channels=embed_dim,
+            kernel_size=1,
+        )
+
+        self.quantize_m = Quantize(
+            dim=embed_dim,
+            n_embed=n_embed,
+            decay=decay,
+        )
+        self.dec_m = Decoder(
+            out_channel=embed_dim,
+            channel=embed_dim,
+            n_res_block=n_res_block,
+            n_res_channel=n_res_channel,
+            additional_layers=0,
+        )
+
+        self.quantize_conv_b = nn.Conv1d(
+            in_channels=(embed_dim + channel),
             out_channels=embed_dim,
             kernel_size=1,
         )
@@ -498,9 +549,22 @@ class VQVAE(nn.Module):
             n_embed=n_embed,
             decay=decay,
         )
+
+        self.upsample_m = nn.ConvTranspose1d(
+                in_channels=(embed_dim + embed_dim),
+                out_channels=embed_dim,
+                kernel_size=3,
+                padding=1
+            )
+        self.upsample_t = nn.ConvTranspose1d(
+                in_channels=embed_dim,
+                out_channels=embed_dim,
+                kernel_size=3,
+                padding=1
+            )
         
         self.fix_channels = nn.Conv1d(
-            in_channels=embed_dim,
+            in_channels=(embed_dim + embed_dim),
             out_channels=channel,
             kernel_size=1,
         )
@@ -520,8 +584,8 @@ class VQVAE(nn.Module):
         return self.forward(inputs)
 
     def forward(self, inputs: Tensor) -> Dict:
-        quant_b, diff, _ = self.encode(inputs)
-        dec = self.decode(quant_b)
+        quant_t, quant_m, quant_b, diff, _, _ = self.encode(inputs)
+        dec = self.decode(quant_t, quant_m, quant_b)
 
         out = {
             MODELS_TENSOR_PREDICITONS_KEY: dec,
@@ -534,97 +598,45 @@ class VQVAE(nn.Module):
 
     def encode(self, inputs: Tensor):
         enc_b = self.enc_b(inputs)
-        
+        enc_m = self.enc_m(enc_b)
+        enc_t = self.enc_t(enc_m)
+
+        quant_t = self.quantize_conv_t(enc_t).permute(0, 2, 1)
+        quant_t, diff_t, id_t = self.quantize_t(quant_t)
+        quant_t = quant_t.permute(0, 2, 1)
+
+        diff_t = diff_t.unsqueeze(0)
+        dec_t = self.dec_t(quant_t)
+        enc_m = torch.cat([dec_t, enc_m], 1)
+
+        quant_m = self.quantize_conv_m(enc_m).permute(0, 2, 1)
+        quant_m, diff_m, _ = self.quantize_m(quant_m)
+        quant_m = quant_m.permute(0, 2, 1)
+
+        diff_m = diff_m.unsqueeze(0)
+        dec_m = self.dec_m(quant_m)
+        enc_b = torch.cat([dec_m, enc_b], 1)
+
         quant_b = self.quantize_conv_b(enc_b).permute(0, 2, 1)
         quant_b, diff_b, id_b = self.quantize_b(quant_b)
         quant_b = quant_b.permute(0, 2, 1)
-        quant_b = self.fix_channels(quant_b)
-        diff_b = diff_b.unsqueeze(0)
-        
-        return quant_b, diff_b, id_b
 
-    def decode(self, quant_b: Tensor):
+        diff_b = diff_b.unsqueeze(0)
+
+        return quant_t, quant_m, quant_b, diff_t + diff_m + diff_b, id_t, id_b
+
+
+    def decode(self, quant_t: Tensor, quant_m: Tensor, quant_b: Tensor):
+        upsample_t = self.upsample_t(quant_t)
+        quant_m = torch.cat([upsample_t, quant_m], 1)
+
+        upsample_b = self.upsample_m(quant_m)
+        quant_b = torch.cat([upsample_b, quant_b], 1)
+        quant_b = self.fix_channels(quant_b)
+
         dec = self.dec(quant_b)
 
         return dec
-
-    def decode_code(self, code_b: Tensor):
-        
-        quant_b = self.quantize_b.embed_code(code_b)
-        quant_b = quant_b.permute(0, 2, 1)
-
-        dec = self.decode(quant_b)
-
-        return dec
-
-
-# class VQVAEWrapper(nn.Module):
-#     """
-#     A class which wraps a pre-trained VQ-VAE model around another generative model, M, which then operates in the VQ-VAE
-#     latent space, i.,e. the complete model performs x-> Encoder -> M -> Decoder -> y.
-#     """
-
-#     def __init__(
-#             self,
-#             pre_trained_vqvae_path: str,
-#             pre_trained_vqvae_params: Dict[str, Any],
-#             generative_model_top: nn.Module,
-#             generative_model_middle: nn.Module,
-#             generative_model_bottom: nn.Module,
-#             device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#     ):
-#         super().__init__()
-
-#         ckpt = torch.load(pre_trained_vqvae_path, map_location=device)['model']
-#         vqvae = VQVAE(
-#             **pre_trained_vqvae_params
-#         )
-#         vqvae.load_state_dict(ckpt, strict=True)
-#         vqvae = vqvae.to(device)
-#         vqvae.requires_grad_(False)
-
-#         self.vqvae = vqvae
-#         self.generative_model_bottom = generative_model_bottom
-
-#     def __call__(self, x: Tensor) -> Dict:
-#         return self.forward(x)
-
-#     def forward(self, x: Tensor) -> Dict:
-#         # Encode the inputs through the VQ-VAE encoder
-#         quant_b, diff, _ = self.vqvae.encode(x)
-
-#         # Apply the generative model to the latent representations
-#         pred_b = self.generative_model_bottom(quant_b)
-
-#         # Decode only the next prediction
-#         p_b = pred_b[MODELS_TENSOR_PREDICITONS_KEY]
-#         prediction_horizon = p_t.shape[2] // quant_t.shape[2]
-#         if prediction_horizon > 1:
-#             p_t = p_t[..., :quant_t.shape[2], :]
-#             p_m = p_m[..., :quant_m.shape[2], :]
-#             p_b = p_b[..., :quant_b.shape[2], :]
-
-#         # Apply the decoder to the outputs of the generative model
-#         pred = self.vqvae.decode(
-#             quant_t=p_t,
-#             quant_m=p_m,
-#             quant_b=p_b,
-#         )
-
-#         out = {
-#             MODELS_TENSOR_PREDICITONS_KEY: pred,
-#             OTHER_KEY: {
-#                 'latent_loss': diff,
-#                 'pred_t': pred_t[MODELS_TENSOR_PREDICITONS_KEY],
-#                 'pred_m': pred_m[MODELS_TENSOR_PREDICITONS_KEY],
-#                 'pred_b': pred_b[MODELS_TENSOR_PREDICITONS_KEY],
-#                 'quant_t': quant_t,
-#                 'quant_m': quant_m,
-#                 'quant_b': quant_b,
-#             }
-#         }
-
-#         return out
 
     
 class ModuleLoss:

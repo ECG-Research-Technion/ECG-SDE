@@ -69,13 +69,25 @@ test_MITBIH_v117 = f'test_MITBIH_{predictions}_v112.pt'
 results_dir_MITBIH_v117 = f"results_MITBIH_{predictions}_v117"
 checkpoints_dir_MITBIH_v117 = f"checkpoints_MITBIH_{predictions}_v117"
 
+# v118 - old vqvae architecture
+train_MITBIH_v118 = f'train_MITBIH_{predictions}_v112.pt'
+test_MITBIH_v118 = f'test_MITBIH_{predictions}_v112.pt'
+results_dir_MITBIH_v118 = f"results_MITBIH_{predictions}_v118"
+checkpoints_dir_MITBIH_v118 = f"checkpoints_MITBIH_{predictions}_v118"
+
+# v119 - no fc
+train_MITBIH_v119 = f'train_MITBIH_{predictions}_v112.pt'
+test_MITBIH_v119 = f'test_MITBIH_{predictions}_v112.pt'
+results_dir_MITBIH_v119 = f"results_MITBIH_{predictions}_v119"
+checkpoints_dir_MITBIH_v119 = f"checkpoints_MITBIH_{predictions}_v119"
+
 datasets_dir_MITBIH = 'MITBIH'
 
 # current settings
-train_data = train_MITBIH_v117
-test_data = test_MITBIH_v117
-results_dir = results_dir_MITBIH_v117
-checkpoints_dir = checkpoints_dir_MITBIH_v117
+train_data = train_MITBIH_v119
+test_data = test_MITBIH_v119
+results_dir = results_dir_MITBIH_v119
+checkpoints_dir = checkpoints_dir_MITBIH_v119
 datasets_dir = datasets_dir_MITBIH
 
 
