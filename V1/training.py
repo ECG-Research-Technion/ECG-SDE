@@ -213,57 +213,7 @@ class Trainer(abc.ABC):
             avg_loss = sum(losses) / len(losses) if losses else float('inf')
             progress.console.log(f"{task_name} completed. Avg. Loss: {avg_loss:.4f}")
 
-            # Optional: Log a summary table after each epoch/batch processing
-            # if verbose:
-            #     table = Table(show_header=True, header_style="bold magenta")
-            #     table.add_column("Metric", style="dim")
-            #     table.add_column("Value")
-            #     table.add_row("Average Loss", f"{avg_loss:.4f}")
-            #     console.log(table)
-
         return EpochResult(losses=losses)
-    
-    # @staticmethod
-    # def _foreach_batch(
-    #     dl: DataLoader,
-    #     forward_fn: Callable[[Any], BatchResult],
-    #     verbose=True,
-    #     max_batches=None,
-    # ) -> EpochResult:
-    #     """
-    #     Evaluates the given forward-function on batches from the given
-    #     dataloader, and prints progress along the way using the rich library.
-    #     """
-    #     losses = []
-    #     num_batches = len(dl.batch_sampler)
-
-    #     # Define custom columns for the progress bar
-    #     custom_columns = [
-    #         TextColumn("[progress.description]{task.description}"),
-    #         BarColumn(bar_width=None),
-    #         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-    #         TextColumn("[yellow]{task.completed}/{task.total} batches"),
-    #         TimeElapsedColumn(),
-    #     ]
-
-    #     progress = Progress(*custom_columns, expand=True)
-    #     task_name = f"{forward_fn.__name__} Processing * "
-
-    #     with progress:
-    #         task = progress.add_task(task_name, total=num_batches)
-    #         dl_iter = iter(dl)
-    #         for _ in range(num_batches):
-    #             data = next(dl_iter)
-    #             batch_res = forward_fn(data)
-    #             losses.append(batch_res.loss)
-    #             # Update the progress bar with the current batch, loss, and dynamic description
-    #             description = f"{task_name} - Loss: {batch_res.loss:.3f}"
-    #             progress.update(task, advance=1, description=description)
-
-    #         avg_loss = sum(losses) / num_batches
-    #         progress.console.print(f"{task_name} - Avg. Loss: {avg_loss:.3f}")
-
-    #     return EpochResult(losses=losses)
     
 
 class VQVAETrainer(Trainer):

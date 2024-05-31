@@ -1,7 +1,0 @@
-This is version V1:
-
-Using our current implementation for forecasting ECG.
-
-VQVAE + SDE
-
-using our classic VQVAE w or w/o the transformer

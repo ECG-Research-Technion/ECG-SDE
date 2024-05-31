@@ -327,17 +327,18 @@ class Encoder(nn.Module):
             out = out.permute(0, 2, 1).contiguous()
 
         if self.has_attention:
-            out = out.permute(0, 2, 1).contiguous()
+            out = out.permute(2, 0, 1).contiguous()
             out = self.pos_encoding(out)
+            out = out.permute(1, 0, 2).contiguous()
             attn_out, _ = self.attention(out, out, out)
             out = out + attn_out
             out = out.permute(0, 2, 1).contiguous()
             out = self.normLayer1(out)
             orig_shape = out.shape
             out = out.view(out.size(0), -1)
-            out = self.fc(out)
+            fc_out = self.fc(out)
+            out = out + fc_out
             out = out.view(orig_shape)
-            out = self.fc_activation(out)
             out = self.normLayer2(out)
             assert out.shape == orig_shape
         out = self.blocks(out)
@@ -360,12 +361,15 @@ class Decoder(nn.Module):
         
         blocks = []
 
-        blocks.append(nn.Conv1d(
+        blocks.extend([
+            nn.Conv1d(
                     in_channels=channel,
                     out_channels=channel,
                     kernel_size=3,
                     padding=1,
-                ))
+            ),
+            nn.SiLU(inplace=True),
+        ])
 
         for _ in range(n_res_block):
             blocks.append(ResBlockDec(channel, n_res_channel))
@@ -405,7 +409,7 @@ class Decoder(nn.Module):
             self.revin_layer = RevIN(num_features=channel, affine=True)
             self.transformer = Transformer(num_heads=2, num_layers=n_trans_layers, feature_dim=channel, sequence_len=forecast_signals, dropout=0.1)
 
-        self.has_attention = has_attention
+        self.has_attention = False
         if self.has_attention:
             self.pos_encoding = PositionalEncoding(channel=channel)
             self.attention = nn.MultiheadAttention(embed_dim=channel, num_heads=2, batch_first=True)
@@ -439,17 +443,18 @@ class Decoder(nn.Module):
             out = out.permute(0, 2, 1).contiguous()
 
         if self.has_attention:
-            out = out.permute(0, 2, 1).contiguous()
+            out = out.permute(2, 0, 1).contiguous()
             out = self.pos_encoding(out)
+            out = out.permute(1, 0, 2).contiguous()
             attn_out, _ = self.attention(out, out, out)
             out = out + attn_out
             out = out.permute(0, 2, 1).contiguous()
             out = self.normLayer1(out)
             orig_shape = out.shape
             out = out.view(out.size(0), -1)
-            out = self.fc(out)
+            fc_out = self.fc(out)
+            out = out + fc_out
             out = out.view(orig_shape)
-            out = self.fc_activation(out)
             out = self.normLayer2(out)
             assert out.shape == orig_shape
 
@@ -556,105 +561,3 @@ class VQVAE(nn.Module):
         dec = self.decode(quant_b)
 
         return dec
-
-
-# class VQVAEWrapper(nn.Module):
-#     """
-#     A class which wraps a pre-trained VQ-VAE model around another generative model, M, which then operates in the VQ-VAE
-#     latent space, i.,e. the complete model performs x-> Encoder -> M -> Decoder -> y.
-#     """
-
-#     def __init__(
-#             self,
-#             pre_trained_vqvae_path: str,
-#             pre_trained_vqvae_params: Dict[str, Any],
-#             generative_model_top: nn.Module,
-#             generative_model_middle: nn.Module,
-#             generative_model_bottom: nn.Module,
-#             device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#     ):
-#         super().__init__()
-
-#         ckpt = torch.load(pre_trained_vqvae_path, map_location=device)['model']
-#         vqvae = VQVAE(
-#             **pre_trained_vqvae_params
-#         )
-#         vqvae.load_state_dict(ckpt, strict=True)
-#         vqvae = vqvae.to(device)
-#         vqvae.requires_grad_(False)
-
-#         self.vqvae = vqvae
-#         self.generative_model_bottom = generative_model_bottom
-
-#     def __call__(self, x: Tensor) -> Dict:
-#         return self.forward(x)
-
-#     def forward(self, x: Tensor) -> Dict:
-#         # Encode the inputs through the VQ-VAE encoder
-#         quant_b, diff, _ = self.vqvae.encode(x)
-
-#         # Apply the generative model to the latent representations
-#         pred_b = self.generative_model_bottom(quant_b)
-
-#         # Decode only the next prediction
-#         p_b = pred_b[MODELS_TENSOR_PREDICITONS_KEY]
-#         prediction_horizon = p_t.shape[2] // quant_t.shape[2]
-#         if prediction_horizon > 1:
-#             p_t = p_t[..., :quant_t.shape[2], :]
-#             p_m = p_m[..., :quant_m.shape[2], :]
-#             p_b = p_b[..., :quant_b.shape[2], :]
-
-#         # Apply the decoder to the outputs of the generative model
-#         pred = self.vqvae.decode(
-#             quant_t=p_t,
-#             quant_m=p_m,
-#             quant_b=p_b,
-#         )
-
-#         out = {
-#             MODELS_TENSOR_PREDICITONS_KEY: pred,
-#             OTHER_KEY: {
-#                 'latent_loss': diff,
-#                 'pred_t': pred_t[MODELS_TENSOR_PREDICITONS_KEY],
-#                 'pred_m': pred_m[MODELS_TENSOR_PREDICITONS_KEY],
-#                 'pred_b': pred_b[MODELS_TENSOR_PREDICITONS_KEY],
-#                 'quant_t': quant_t,
-#                 'quant_m': quant_m,
-#                 'quant_b': quant_b,
-#             }
-#         }
-
-#         return out
-
-    
-class ModuleLoss:
-    def __init__(self, model: nn.Module, scale: float = 1.0):
-        self.model = model
-        self.scale = scale
-
-    def __call__(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
-        loss = self.model(y_pred, y_true)
-        loss = loss * self.scale
-        return loss
-
-    
-class VQVAE_Loss():
-    def __init__(
-            self,
-            alpha: float = 0.25,
-            gamma: float = 1.0,
-            distance_metric: ModuleLoss = ModuleLoss(
-                model=nn.MSELoss(),
-                scale=1,
-            ),
-    ):
-
-        self._alpha = alpha
-        self._gamma = gamma
-        self._distance_metric = distance_metric
-
-    def forward(self, inputs: Dict) -> Tensor:
-        latent_loss = inputs[OTHER_KEY]['latent_loss']
-        loss = (self._gamma * self._distance_metric(inputs, inputs[MODELS_TENSOR_PREDICITONS_KEY])) + (self._alpha * latent_loss.mean())
-
-        return loss

@@ -19,7 +19,7 @@ from paths import *
 
 # Configure GPU settings
 os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
-os.environ['CUDA_VISIBLE_DEVICES'] = '5'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
@@ -102,6 +102,7 @@ def setup_model_and_optim():
         has_attention=config['has_attention'],
         n_trans_layers=vqvae_hp['n_trans_layers']
     ).to(device)
+    vqvae = nn.DataParallel(vqvae)
     print(f"Number of parameters in the model: {sum(p.numel() for p in vqvae.parameters() if p.requires_grad)}")
     
     optimizer = optim.RAdam(vqvae.parameters(), lr=vqvae_hp['learning_rate'])
