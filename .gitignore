@@ -1,0 +1,5 @@
+V1/__pycache__/
+V1/checkpoints/
+V1/results/
+datasets/
+tmp/
