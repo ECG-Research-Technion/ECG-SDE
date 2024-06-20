@@ -5,31 +5,17 @@ def vqvae_hyperparams():
     )
     
     # ========================
-    hypers['in_channel'] = 2              # The number of channels in the ECG signal
+    hypers['in_channels'] = 2             # The number of channels in the ECG signal
     
-    hypers['channel'] = 16                # The number of channels in the feature maps produced by the encoder
-
-    hypers['enc_channels'] = 16           # The number of channels in the feature maps produced by the encoder
-    
-    hypers['n_res_block'] = 100           # The number of residual blocks in the VQ-VAE model
-
-    hypers['n_res_channel'] = 32          # The number of channels in the residual blocks of the transformer
+    hypers['enc_channels'] = 64           # The number of channels in the feature maps produced by the encoder
         
-    hypers['embed_dim'] = 512             # The dimensionality of the vector embeddings produced by the VQ layer
+    hypers['embed_dim'] = 80              # The dimensionality of the vector embeddings produced by the VQ layer
     
-    hypers['n_embed'] = 1024              # The number of vectors in the codebook used by the VQ layer
-    
-    hypers['decay'] = 0.99                # The decay rate used in the exponential moving average update of the codebook 
-    
-    hypers['n_dims'] = 1                  # The number of dimensions in the input data. For us, this should be the number of samples in the signal
-        
-    hypers['n_trans_layers'] = 6          # The number of transformer layers in the VQ-VAE model
-    
-    hypers['batch_size'] = 128              # The number of samples in each batch
+    hypers['n_embed'] = 512               # The number of vectors in the codebook used by the VQ layer
+                    
+    hypers['batch_size'] = 32             # The number of samples in each batch
     
     hypers['learning_rate'] = 0.001       # The learning rate used by the optimizer
-
-    hypers['num_epochs'] = 2000           # The number of epochs to train the model
     # ========================
 
     return hypers

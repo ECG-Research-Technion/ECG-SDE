@@ -4,11 +4,11 @@ import sys
 import tqdm
 import torch
 from typing import Any, Callable
+from statistics import mean
 from pathlib import Path
 from torch.utils.data import DataLoader
-from vqvae import MODELS_TENSOR_PREDICITONS_KEY, OTHER_KEY 
-from hyper_params_sde import *
-from torch import distributions, nn, optim
+# from hyper_params_sde import *
+from torch import distributions
 from train_results import FitResult, BatchResult, EpochResult
 from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 from rich.console import Console
@@ -86,8 +86,8 @@ class Trainer(abc.ABC):
             test_result = self.test_epoch(dl_test,**kw)
             test_loss += test_result.losses
 
-            train_loss_epoch = sum(train_result.losses) / len(train_result.losses)
-            test_loss_epoch = sum(test_result.losses) / len(test_result.losses)
+            train_loss_epoch = mean(train_result.losses)
+            test_loss_epoch = mean(test_result.losses)
             # ========================
 
             if self.scheduler:
@@ -222,8 +222,8 @@ class VQVAETrainer(Trainer):
         x = batch 
         x = x.to(self.device)
         outputs = self.model(x)
-        latent_loss = outputs[OTHER_KEY]['latent_loss']
-        loss = 0.8 * self.loss_fn(outputs[MODELS_TENSOR_PREDICITONS_KEY], x) + (0.2 * latent_loss.mean())
+        latent_loss = outputs['latent_loss']
+        loss = self.loss_fn(outputs['reconstructed'], x) + (0.25 * latent_loss.mean())
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -236,112 +236,112 @@ class VQVAETrainer(Trainer):
 
         with torch.no_grad():
             outputs = self.model(x)
-            latent_loss = outputs[OTHER_KEY]['latent_loss']
-            loss = 0.8 * self.loss_fn(outputs[MODELS_TENSOR_PREDICITONS_KEY], x) + (0.2 * latent_loss.mean())
+            latent_loss = outputs['latent_loss']
+            loss = self.loss_fn(outputs['reconstructed'], x) + (0.25 * latent_loss.mean())
 
         return BatchResult(loss.item())
     
 
-class LatentSDETrainer(Trainer):
+# class LatentSDETrainer(Trainer):
     
-    def __init__(self, model, loss_fn, optimizer, device, vqvae, scheduler, kl_scheduler, logpy_metric, kl_metric, loss_metric):
-        super().__init__(model, loss_fn, optimizer, device)
-        self.vqvae = vqvae
-        self.scheduler = scheduler
-        self.kl_scheduler = kl_scheduler
-        self.logpy_metric = logpy_metric
-        self.kl_metric = kl_metric
-        self.loss_metric = loss_metric
+#     def __init__(self, model, loss_fn, optimizer, device, vqvae, scheduler, kl_scheduler, logpy_metric, kl_metric, loss_metric):
+#         super().__init__(model, loss_fn, optimizer, device)
+#         self.vqvae = vqvae
+#         self.scheduler = scheduler
+#         self.kl_scheduler = kl_scheduler
+#         self.logpy_metric = logpy_metric
+#         self.kl_metric = kl_metric
+#         self.loss_metric = loss_metric
         
-    def train_batch(self, batch) -> BatchResult:
-        hyperparams = sde_hyperparams()
+#     def train_batch(self, batch) -> BatchResult:
+#         hyperparams = sde_hyperparams()
         
-        (x,) = batch # [4,2,5*128]
-        x = x.to(self.device)
-        X_train = x[::4]
-        row_indices = torch.arange(0, x.size(0))  # Generate row indices from 0 to batch_size-1
-        not_divisible_by_4_indices = row_indices[row_indices % 4 != 0]
-        X_original = x[not_divisible_by_4_indices]
+#         (x,) = batch # [4,2,5*128]
+#         x = x.to(self.device)
+#         X_train = x[::4]
+#         row_indices = torch.arange(0, x.size(0))  # Generate row indices from 0 to batch_size-1
+#         not_divisible_by_4_indices = row_indices[row_indices % 4 != 0]
+#         X_original = x[not_divisible_by_4_indices]
         
-        #### Encode using vq vae from original to latent
-        self.vqvae.requires_grad_(False)
-        quant_b, _, _ = self.vqvae.module.encode(X_train) # [1,8,5*128]
+#         #### Encode using vq vae from original to latent
+#         self.vqvae.requires_grad_(False)
+#         quant_b, _, _ = self.vqvae.module.encode(X_train) # [1,8,5*128]
 
-        # Reshaping quant_b from [batch, channels, window_size] to [batch, channels*window_size], it will arrange the values in the way you described.
-        # It will first take all the values from the first channel of window_size, then concatenate the values from the second channel of window_size, and so on, 
-        # until it has gone through all the channels.
-        quant_b = quant_b.view(quant_b.size(0), -1) # [1, 5120]
-        #### forward into SDE into latent space
-        ts_ext = torch.linspace(0, 1, 5) # [5]
-        self.optimizer.zero_grad()
-        zs, kl = self.model(ts=ts_ext, y=quant_b, batch_size=quant_b.size(0)) # zs being [1,1,5120] is wrong! should be [5,1,5120]
-        zs = zs[1:-1]  # Drop first and last which are only used to penalize out-of-data region and spread uncertainty.
-        zs = zs.reshape(zs.size(0), zs.size(1), 8, 128*5) # change it
-        kl = kl.mean()
-        # zs should be [3,128]
+#         # Reshaping quant_b from [batch, channels, window_size] to [batch, channels*window_size], it will arrange the values in the way you described.
+#         # It will first take all the values from the first channel of window_size, then concatenate the values from the second channel of window_size, and so on, 
+#         # until it has gone through all the channels.
+#         quant_b = quant_b.view(quant_b.size(0), -1) # [1, 5120]
+#         #### forward into SDE into latent space
+#         ts_ext = torch.linspace(0, 1, 5) # [5]
+#         self.optimizer.zero_grad()
+#         zs, kl = self.model(ts=ts_ext, y=quant_b, batch_size=quant_b.size(0)) # zs being [1,1,5120] is wrong! should be [5,1,5120]
+#         zs = zs[1:-1]  # Drop first and last which are only used to penalize out-of-data region and spread uncertainty.
+#         zs = zs.reshape(zs.size(0), zs.size(1), 8, 128*5) # change it
+#         kl = kl.mean()
+#         # zs should be [3,128]
         
-        average_loss = 0
-        #### Decode using vq vae from latent to original
-        for i in range(zs.size(0)):
-            for channel in range(2):
-                X_reconstructed = self.vqvae.module.decode(zs[i])
+#         average_loss = 0
+#         #### Decode using vq vae from latent to original
+#         for i in range(zs.size(0)):
+#             for channel in range(2):
+#                 X_reconstructed = self.vqvae.module.decode(zs[i])
 
-                likelihood_constructor = {"laplace": distributions.Laplace, "normal": distributions.Normal}[hyperparams['likelihood']]
-                likelihood = likelihood_constructor(loc=X_reconstructed[channel], scale=hyperparams['scale'])
-                logpy = likelihood.log_prob(X_original[i][channel]).sum(dim=0).mean(dim=0)
+#                 likelihood_constructor = {"laplace": distributions.Laplace, "normal": distributions.Normal}[hyperparams['likelihood']]
+#                 likelihood = likelihood_constructor(loc=X_reconstructed[channel], scale=hyperparams['scale'])
+#                 logpy = likelihood.log_prob(X_original[i][channel]).sum(dim=0).mean(dim=0)
 
-                loss = -logpy + kl * self.kl_scheduler.val
-                loss.backward()
+#                 loss = -logpy + kl * self.kl_scheduler.val
+#                 loss.backward()
                 
-                # TODO: sum losses and do backward once
-                self.optimizer.step()
-                self.scheduler.step()
-                self.kl_scheduler.step()
+#                 # TODO: sum losses and do backward once
+#                 self.optimizer.step()
+#                 self.scheduler.step()
+#                 self.kl_scheduler.step()
 
-                self.logpy_metric.step(logpy)
-                self.kl_metric.step(kl)
-                self.loss_metric.step(loss)
+#                 self.logpy_metric.step(logpy)
+#                 self.kl_metric.step(kl)
+#                 self.loss_metric.step(loss)
 
-                average_loss += loss.item()
+#                 average_loss += loss.item()
         
-        return BatchResult(average_loss/zs.size(0))
+#         return BatchResult(average_loss/zs.size(0))
 
-    def test_batch(self, batch) -> BatchResult:
-        hyperparams = sde_hyperparams()
+#     def test_batch(self, batch) -> BatchResult:
+#         hyperparams = sde_hyperparams()
         
-        (x,) = batch
-        x = x.to(self.device)
-        X_test = x[::4]
-        row_indices = torch.arange(0, x.size(0))  # Generate row indices from 0 to batch_size-1
-        not_divisible_by_4_indices = row_indices[row_indices % 4 != 0]
-        X_original = x[not_divisible_by_4_indices]
+#         (x,) = batch
+#         x = x.to(self.device)
+#         X_test = x[::4]
+#         row_indices = torch.arange(0, x.size(0))  # Generate row indices from 0 to batch_size-1
+#         not_divisible_by_4_indices = row_indices[row_indices % 4 != 0]
+#         X_original = x[not_divisible_by_4_indices]
         
-        with torch.no_grad():
-            #### Encode using vq vae from original to latent
-            self.vqvae.requires_grad_(False)
-            quant_b, _, _ = self.vqvae.module.encode(X_test)
-            quant_b = quant_b.view(quant_b.size(0), -1)
+#         with torch.no_grad():
+#             #### Encode using vq vae from original to latent
+#             self.vqvae.requires_grad_(False)
+#             quant_b, _, _ = self.vqvae.module.encode(X_test)
+#             quant_b = quant_b.view(quant_b.size(0), -1)
 
-            #### forward into SDE into latent space
-            ts_ext = torch.linspace(0, 1, 5)
-            zs, kl = self.model(ts=ts_ext, y=quant_b, batch_size=quant_b.size(0)) # y should be [batch_size, 128]
-            zs = zs[1:-1]  # Drop first and last which are only used to penalize out-of-data region and spread uncertainty.
-            # zs should be [3,128]
-            kl = kl.mean()
-            zs = zs.reshape(zs.size(0), zs.size(1), 8, 128*5)
+#             #### forward into SDE into latent space
+#             ts_ext = torch.linspace(0, 1, 5)
+#             zs, kl = self.model(ts=ts_ext, y=quant_b, batch_size=quant_b.size(0)) # y should be [batch_size, 128]
+#             zs = zs[1:-1]  # Drop first and last which are only used to penalize out-of-data region and spread uncertainty.
+#             # zs should be [3,128]
+#             kl = kl.mean()
+#             zs = zs.reshape(zs.size(0), zs.size(1), 8, 128*5)
 
-            average_loss = 0
-            #### Decode using vq vae from latent to original
-            for i in range(zs.size(0)):
-                for channel in range(2):
-                    self.vqvae.requires_grad_(False)
-                    X_reconstructed = self.vqvae.module.decode(zs[i])
+#             average_loss = 0
+#             #### Decode using vq vae from latent to original
+#             for i in range(zs.size(0)):
+#                 for channel in range(2):
+#                     self.vqvae.requires_grad_(False)
+#                     X_reconstructed = self.vqvae.module.decode(zs[i])
 
-                    likelihood_constructor = {"laplace": distributions.Laplace, "normal": distributions.Normal}[hyperparams['likelihood']]
-                    likelihood = likelihood_constructor(loc=X_reconstructed[channel], scale=hyperparams['scale'])
-                    logpy = likelihood.log_prob(X_original[i][channel]).sum(dim=0).mean(dim=0)
-                    loss = -logpy + kl * self.kl_scheduler.val
+#                     likelihood_constructor = {"laplace": distributions.Laplace, "normal": distributions.Normal}[hyperparams['likelihood']]
+#                     likelihood = likelihood_constructor(loc=X_reconstructed[channel], scale=hyperparams['scale'])
+#                     logpy = likelihood.log_prob(X_original[i][channel]).sum(dim=0).mean(dim=0)
+#                     loss = -logpy + kl * self.kl_scheduler.val
                     
-                    average_loss += loss.item()
+#                     average_loss += loss.item()
             
-        return BatchResult(average_loss/zs.size(0), 0)
+#         return BatchResult(average_loss/zs.size(0), 0)

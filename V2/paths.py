@@ -69,13 +69,43 @@ test_MITBIH_v116 = f'test_MITBIH_{predictions}_v111.pt'
 results_dir_MITBIH_v116 = f"results_MITBIH_{predictions}_v116"
 checkpoints_dir_MITBIH_v116 = f"checkpoints_MITBIH_{predictions}_v116"
 
+# v200 on the new arch, is the MITBIH dataset, w/o transformer, Norm batch -> LeakyReLU AL, 64 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v200 = f'train_MITBIH_{predictions}_v111.pt'
+test_MITBIH_v200 = f'test_MITBIH_{predictions}_v111.pt'
+results_dir_MITBIH_v200 = f"results_MITBIH_{predictions}_v200"
+checkpoints_dir_MITBIH_v200 = f"checkpoints_MITBIH_{predictions}_v200"
+
+# v201 on the new arch, is the MITBIH dataset, w/o transformer, bigger model, Norm batch -> LeakyReLU AL, 100 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v201 = f'train_MITBIH_{predictions}_v111.pt'
+test_MITBIH_v201 = f'test_MITBIH_{predictions}_v111.pt'
+results_dir_MITBIH_v201 = f"results_MITBIH_{predictions}_v201"
+checkpoints_dir_MITBIH_v201 = f"checkpoints_MITBIH_{predictions}_v201"
+
+# v202 on the new arch, is the MITBIH dataset, w/o transformer, bigger model, bigger window-size, LeakyReLU AL, 64 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v202 = f'train_MITBIH_{predictions}_v111.pt'
+test_MITBIH_v202 = f'test_MITBIH_{predictions}_v111.pt'
+results_dir_MITBIH_v202 = f"results_MITBIH_{predictions}_v202"
+checkpoints_dir_MITBIH_v202 = f"checkpoints_MITBIH_{predictions}_v202"
+
+# v203 on the new arch, is the MITBIH dataset, w/o transformer, bigger+ model, bigger window-size, LeakyReLU AL, 64 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v203 = f'train_MITBIH_{predictions}_v111.pt'
+test_MITBIH_v203 = f'test_MITBIH_{predictions}_v111.pt'
+results_dir_MITBIH_v203 = f"results_MITBIH_{predictions}_v203"
+checkpoints_dir_MITBIH_v203 = f"checkpoints_MITBIH_{predictions}_v203"
+
+# v204 on the new arch, is the MITBIH dataset, w/o transformer, bigger+ model + batchnorm, bigger window-size, LeakyReLU AL, 64 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v204 = f'train_MITBIH_{predictions}_v111.pt'
+test_MITBIH_v204 = f'test_MITBIH_{predictions}_v111.pt'
+results_dir_MITBIH_v204 = f"results_MITBIH_{predictions}_v204"
+checkpoints_dir_MITBIH_v204 = f"checkpoints_MITBIH_{predictions}_v204"
+
 datasets_dir_MITBIH = 'MITBIH'
 
 # current settings
-train_data = train_MITBIH_v116
-test_data = test_MITBIH_v116
-results_dir = results_dir_MITBIH_v116
-checkpoints_dir = checkpoints_dir_MITBIH_v116
+train_data = train_MITBIH_v204
+test_data = test_MITBIH_v204
+results_dir = results_dir_MITBIH_v204
+checkpoints_dir = checkpoints_dir_MITBIH_v204
 datasets_dir = datasets_dir_MITBIH
 
 

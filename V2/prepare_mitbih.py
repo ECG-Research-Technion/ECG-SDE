@@ -130,8 +130,10 @@ def main():
     else:        
         if is_overfitting:
             print(f"Mode is overfitting, retrieving 1 signal to overfit") 
-            X_train_data = torch.from_numpy(wfdb.rdrecord('100', pn_dir='mitdb', sampto=1080).p_signal).unsqueeze(0).permute(0, 2, 1).float()
-            X_train_data = torch.cat([X_train_data, X_train_data, X_train_data, X_train_data], dim=0)
+            Loaded_data = torch.from_numpy(wfdb.rdrecord('100', pn_dir='mitdb', sampto=1080*32).p_signal).permute(1,0).float()
+            X_train_data = torch.empty(32, 2, 1080)
+            for i in range(32):
+                X_train_data[i, :, :] = Loaded_data[:,i*1080:(i+1)*1080]
         else:
             X_train_data = mitbih_dataset.prepare_model_input('Train')
         torch.save(X_train_data, str(X_train_filename))
@@ -141,8 +143,10 @@ def main():
         X_test_data = torch.load(str(X_test_filename))
     else:
         if is_overfitting:
-            X_test_data = torch.from_numpy(wfdb.rdrecord('100', pn_dir='mitdb', sampto=1080).p_signal).unsqueeze(0).permute(0, 2, 1).float()
-            X_test_data = torch.cat([X_test_data, X_test_data, X_test_data, X_test_data], dim=0)
+            Loaded_data = torch.from_numpy(wfdb.rdrecord('100', pn_dir='mitdb', sampto=1080*32).p_signal).permute(1,0).float()
+            X_test_data = torch.empty(32, 2, 1080)
+            for i in range(32):
+                X_test_data[i, :, :] = Loaded_data[:,i*1080:(i+1)*1080]
         else:
             X_test_data = mitbih_dataset.prepare_model_input('Test')
         torch.save(X_test_data, str(X_test_filename))
