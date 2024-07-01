@@ -99,13 +99,37 @@ test_MITBIH_v204 = f'test_MITBIH_{predictions}_v111.pt'
 results_dir_MITBIH_v204 = f"results_MITBIH_{predictions}_v204"
 checkpoints_dir_MITBIH_v204 = f"checkpoints_MITBIH_{predictions}_v204"
 
+# v205 on the new arch, is the MITBIH dataset, model cnn is focused on sequence length LeakyReLU AL, 32 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v205 = f'train_MITBIH_{predictions}_5sec_50sig.pt'
+test_MITBIH_v205 = f'test_MITBIH_{predictions}_5sec_50sig.pt'
+results_dir_MITBIH_v205 = f"results_MITBIH_{predictions}_v205"
+checkpoints_dir_MITBIH_v205 = f"checkpoints_MITBIH_{predictions}_v205"
+
+# v210 on the new arch based on cnn+tanh, is the MITBIH dataset, 64 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v210 = f'train_MITBIH_{predictions}_5sec_50sig.pt'
+test_MITBIH_v210 = f'test_MITBIH_{predictions}_5sec_50sig.pt'
+results_dir_MITBIH_v210 = f"results_MITBIH_{predictions}_v210"
+checkpoints_dir_MITBIH_v210 = f"checkpoints_MITBIH_{predictions}_v210"
+
+# v211 on the new arch based on cnn+tanh, is the MITBIH dataset, bigger+ model + 1 LayerNorm, 64 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v211 = f'train_MITBIH_{predictions}_5sec_50sig.pt'
+test_MITBIH_v211 = f'test_MITBIH_{predictions}_5sec_50sig.pt'
+results_dir_MITBIH_v211 = f"results_MITBIH_{predictions}_v211"
+checkpoints_dir_MITBIH_v211 = f"checkpoints_MITBIH_{predictions}_v211"
+
+# v212 on the new arch based on cnn+tanh, is the MITBIH dataset, bigger+ model, 64 embed size in quantization, MSE loss and 0.25 latent loss, for {predictions} prediction, with 100 signals per patient, with 3 input signals duration seconds, with 360 sample per second
+train_MITBIH_v212 = f'train_MITBIH_{predictions}_5sec_50sig.pt'
+test_MITBIH_v212 = f'test_MITBIH_{predictions}_5sec_50sig.pt'
+results_dir_MITBIH_v212 = f"results_MITBIH_{predictions}_v212"
+checkpoints_dir_MITBIH_v212 = f"checkpoints_MITBIH_{predictions}_v212"
+
 datasets_dir_MITBIH = 'MITBIH'
 
 # current settings
-train_data = train_MITBIH_v204
-test_data = test_MITBIH_v204
-results_dir = results_dir_MITBIH_v204
-checkpoints_dir = checkpoints_dir_MITBIH_v204
+train_data = train_MITBIH_v212
+test_data = test_MITBIH_v212
+results_dir = results_dir_MITBIH_v212
+checkpoints_dir = checkpoints_dir_MITBIH_v212
 datasets_dir = datasets_dir_MITBIH
 
 

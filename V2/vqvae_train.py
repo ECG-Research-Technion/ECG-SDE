@@ -89,7 +89,7 @@ def setup_model():
     print(vqvae_hp)
     vqvae = VQVAE(
         in_channels=vqvae_hp['in_channels'],
-        enc_channels=vqvae_hp['enc_channels'],
+        latent_dim=vqvae_hp['latent_dim'],
         embed_dim=vqvae_hp['embed_dim'],
         n_embed=vqvae_hp['n_embed'],
     ).to(device)
@@ -111,10 +111,10 @@ def eval_before_train(X_test_data, model):
 def train(vqvae, optimizer, X_train_data, X_test_data):
     # Define training parameters
     criterion = nn.MSELoss()
-    trainer = VQVAETrainer(model=vqvae, loss_fn=criterion, optimizer=optimizer, device=device)
+    trainer = VQVAETrainer(model=vqvae, loss_fn=criterion, optimizer=optimizer, device=device, log_dir="logs_212", enable_tensorboard=True)
     CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
     checkpoint_file = CHECKPOINTS_DIR / 'vqvae_weights'
-    checkpoint_file_final = CHECKPOINTS_DIR / '_final'
+    fine_tune = config['fine_tune']
 
     # Prepare data loaders
     num_cpu_cores = os.cpu_count()
@@ -128,16 +128,24 @@ def train(vqvae, optimizer, X_train_data, X_test_data):
         for X_data in [X_train_data, X_test_data]
     ]
 
-    # Train the model or load from checkpoint
-    if not checkpoint_file_final.is_file():
-        trainer.fit(dl_train, dl_test,
-            num_epochs=5000, early_stopping=6000, print_every=1, save_weights_every=1,
-            checkpoints=checkpoint_file,
-            post_epoch_fn=post_epoch_fn, X_test_data=X_test_data, model=vqvae)
-    else:
-        print(f"*** Loading final checkpoint file {checkpoint_file_final} instead of training")
-        state_dict = torch.load(f"{checkpoint_file_final}.pt")
+    if fine_tune:
+        checkpoint_file = CHECKPOINTS_DIR / 'vqvae_weights_299_0.1966_0.1954'
+        state_dict = torch.load(f"{checkpoint_file}.pt")['model_state']
         vqvae.load_state_dict(state_dict)
+        print(f"*** Loading checkpoint file {checkpoint_file} for fine-tuning")
+
+    # Train the model or load from checkpoint
+    trainer.fit(dl_train, 
+                dl_test, 
+                num_epochs=5000, 
+                early_stopping=6000, 
+                print_every=1, 
+                save_weights_every=1,
+                checkpoints=checkpoint_file,
+                post_epoch_fn=post_epoch_fn, 
+                X_test_data=X_test_data, 
+                model=vqvae)
+
 
 def main():
     X_train_data, X_test_data = initialize_data()

@@ -151,7 +151,7 @@ class VQVAE(nn.Module):
     def __init__(
             self,
             in_channels: int = 2,
-            enc_channels: int = 32,
+            latent_dim: int = 32,
             embed_dim: int = 64,
             n_embed: int = 512,
     ):
@@ -159,11 +159,11 @@ class VQVAE(nn.Module):
 
         self.encode = Encoder(
             in_channels=in_channels,
-            enc_channels=enc_channels,
+            latent_dim=latent_dim,
         )
 
         self.pre_quantize = nn.Conv1d(
-            in_channels=enc_channels,
+            in_channels=latent_dim,
             out_channels=embed_dim,
             kernel_size=1,
         )
@@ -175,12 +175,12 @@ class VQVAE(nn.Module):
         
         self.post_quantize = nn.Conv1d(
             in_channels=embed_dim,
-            out_channels=enc_channels,
+            out_channels=latent_dim,
             kernel_size=1,
         )
         
         self.decode = Decoder(
-            enc_channels=enc_channels,
+            latent_dim=latent_dim,
             out_channels=in_channels,
         )
 

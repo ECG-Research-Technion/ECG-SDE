@@ -7,11 +7,11 @@ def vqvae_hyperparams():
     # ========================
     hypers['in_channels'] = 2             # The number of channels in the ECG signal
     
-    hypers['enc_channels'] = 64           # The number of channels in the feature maps produced by the encoder
+    hypers['latent_dim'] = 32             # The number of channels in the feature maps produced by the encoder
         
-    hypers['embed_dim'] = 80              # The dimensionality of the vector embeddings produced by the VQ layer
+    hypers['embed_dim'] = 32              # The dimensionality of the vector embeddings produced by the VQ layer
     
-    hypers['n_embed'] = 512               # The number of vectors in the codebook used by the VQ layer
+    hypers['n_embed'] = 1024              # The number of vectors in the codebook used by the VQ layer
                     
     hypers['batch_size'] = 32             # The number of samples in each batch
     
